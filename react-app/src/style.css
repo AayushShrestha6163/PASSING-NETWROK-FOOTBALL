@@ -1,8 +1,4 @@
-/* ============================================================
-   Passing Networks Studio — "Floodlight" theme
-   Light: chalk-white matchday board. Dark: stadium-at-night.
-   Toggle sets data-theme="light" | "dark" on <html>.
-   ============================================================ */
+
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 :root{
@@ -78,6 +74,22 @@ header h1 span{color:var(--accent);font-weight:600}
 
 .uploadmsg{padding:10px 24px 0;font-size:12px;min-height:0}
 .uploadmsg.ok{color:var(--good)}.uploadmsg.err{color:var(--bad)}
+
+.mode-tabs{display:flex;gap:8px;margin:22px 24px 0}
+.mode-tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:999px;
+  padding:8px 16px;font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;cursor:pointer;transition:border-color .15s ease,color .15s ease,background-color .15s ease}
+.mode-tabs button.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.trend-chart{width:100%;display:block}
+.trend-chart .axis{stroke:var(--line);stroke-width:1}
+.trend-chart .line{fill:none;stroke:var(--accent);stroke-width:2}
+.trend-chart .pt{fill:var(--accent)}
+.trend-chart text{font-family:var(--font-mono);font-size:9px;fill:var(--muted)}
+
+.takeaways{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.takeaways li{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:6px;padding:10px 12px;font-size:13px;line-height:1.5}
 
 .steps{display:flex;gap:2px;margin:26px 24px 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 .steps button{background:transparent;color:var(--muted);border:none;border-bottom:2px solid transparent;

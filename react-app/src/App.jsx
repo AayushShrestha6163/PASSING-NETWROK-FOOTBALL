@@ -334,6 +334,144 @@ async function renderReport(S, api) {
     <div class="card"><h4>6. How to read it</h4><p class="muted">The verdict's justice score (25 + 18.75 per metric the winner led, out of xG / xT / possession / passes) says how well the result matched the balance of play. A dominant network (high density, distributed hub) with strong pressing (low PPDA) and territory (high field tilt) that agrees with the scoreline is a deserved win; when they disagree, it is a smash-and-grab.</p></div>`;
 }
 
+function svgTrendChart(trend, key, { label = "", suffix = "" } = {}) {
+  const vals = trend.map((m) => m[key]).filter((v) => v != null);
+  if (!vals.length) return `<p class="muted" style="font-size:12px">Not enough data for ${esc(label)}.</p>`;
+  const w = 320, h = 130, padL = 30, padR = 10, padT = 12, padB = 22;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const stepX = (w - padL - padR) / Math.max(trend.length - 1, 1);
+  const pts = trend.map((m, i) => {
+    const v = m[key];
+    return {
+      x: padL + i * stepX,
+      y: v == null ? null : padT + (h - padT - padB) * (1 - (v - min) / range),
+      v, date: m.match_date, opp: m.opponent,
+    };
+  });
+  const valid = pts.filter((p) => p.y != null);
+  const line = valid.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const dots = valid.map((p) =>
+    `<circle class="pt" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.6"><title>${esc(p.date)} vs ${esc(p.opp || "-")}: ${n2(p.v)}${suffix}</title></circle>`
+  ).join("");
+  return `<svg class="trend-chart" viewBox="0 0 ${w} ${h}">
+    <line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}"/>
+    <line class="axis" x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}"/>
+    <text x="2" y="${padT + 4}">${n1(max)}${suffix}</text>
+    <text x="2" y="${h - padB}">${n1(min)}${suffix}</text>
+    <polyline class="line" points="${line}"/>
+    ${dots}
+  </svg>`;
+}
+
+function renderOpponentProfile(profile) {
+  const a = profile.averages || {};
+  const rows = (profile.trend || []).map((m) =>
+    `<tr><td>${esc(m.match_date)}</td><td>${esc(m.opponent || "-")}</td>
+      <td class="num">${m.ppda == null ? "-" : n1(m.ppda)}</td>
+      <td class="num">${m.field_tilt == null ? "-" : m.field_tilt + "%"}</td>
+      <td class="num">${m.density == null ? "-" : (m.density * 100).toFixed(0) + "%"}</td>
+      <td>${esc(m.hub || "-")}</td></tr>`
+  ).join("");
+  const takeaways = (profile.takeaways || []).map((t) => `<li>${esc(t)}</li>`).join("");
+  return `<div class="card match-hero">
+      <div class="eyebrow">Opponent scout &middot; ${profile.matches_analyzed} match${profile.matches_analyzed === 1 ? "" : "es"} analyzed</div>
+      <div class="matchup"><div class="side home"><span class="team-name">${esc(profile.team)}</span></div></div>
+      <div class="statgrid">
+        ${stat("Avg PPDA", a.ppda == null ? "-" : a.ppda)}
+        ${stat("Avg field tilt", a.field_tilt == null ? "-" : a.field_tilt + "%")}
+        ${stat("Avg density", a.density == null ? "-" : (a.density * 100).toFixed(0) + "%")}
+        ${stat("Avg centralisation", a.centrality_percentage == null ? "-" : a.centrality_percentage + "%")}
+        ${stat("Most common hub", esc(profile.most_common_hub || "-"))}
+        ${stat("Most common style", esc(profile.most_common_style || "-"))}
+      </div>
+    </div>
+    <div class="card"><h3>Scouting takeaways</h3><ul class="takeaways">${takeaways || '<li>Not enough data yet.</li>'}</ul></div>
+    <div class="cols">
+      <div class="card"><h4>PPDA trend &middot; lower = presses higher</h4>${svgTrendChart(profile.trend, "ppda", { label: "PPDA" })}</div>
+      <div class="card"><h4>Field tilt trend</h4>${svgTrendChart(profile.trend, "field_tilt", { label: "Field tilt", suffix: "%" })}</div>
+    </div>
+    <div class="card"><h4>Match-by-match</h4>
+      <table><tr><th>Match</th><th>Opponent</th><th class="num">PPDA</th><th class="num">Field tilt</th><th class="num">Density</th><th>Hub</th></tr>${rows}</table>
+    </div>`;
+}
+
+function renderCompareTeams(a, b) {
+  const aa = a.averages || {}, bb = b.averages || {};
+  // [label, value_a, value_b, direction] - direction says which side "wins" that metric
+  const metricRows = [
+    ["Avg PPDA (pressing intensity)", aa.ppda, bb.ppda, "low", ""],
+    ["Avg field tilt", aa.field_tilt, bb.field_tilt, "high", "%"],
+    ["Avg network density", aa.density != null ? aa.density * 100 : null, bb.density != null ? bb.density * 100 : null, "high", "%"],
+    ["Avg centralisation", aa.centrality_percentage, bb.centrality_percentage, "neutral", "%"],
+  ];
+  const h2hRows = metricRows.map(([label, va, vb, dir, suffix]) => {
+    let aStyle = "", bStyle = "";
+    if (va != null && vb != null && dir !== "neutral" && va !== vb) {
+      const aBetter = dir === "low" ? va < vb : va > vb;
+      aStyle = aBetter ? ' style="color:var(--good);font-weight:700"' : "";
+      bStyle = !aBetter ? ' style="color:var(--good);font-weight:700"' : "";
+    }
+    return `<tr><td>${label}</td>
+      <td class="num"${aStyle}>${va == null ? "-" : n1(va) + suffix}</td>
+      <td class="num"${bStyle}>${vb == null ? "-" : n1(vb) + suffix}</td></tr>`;
+  }).join("");
+
+  const teamCard = (p, side) => `<div class="card"><div class="teamhdr"><span class="dot" style="background:var(--${side})"></span>${esc(p.team)}</div>
+    <div class="statgrid">
+      ${stat("Avg PPDA", p.averages?.ppda ?? "-")}
+      ${stat("Avg field tilt", p.averages?.field_tilt != null ? p.averages.field_tilt + "%" : "-")}
+      ${stat("Hub", esc(p.most_common_hub || "-"))}
+      ${stat("Style", esc(p.most_common_style || "-"))}
+    </div>
+    <h4>Takeaways</h4>
+    <ul class="takeaways">${(p.takeaways || []).map((t) => `<li>${esc(t)}</li>`).join("") || "<li>Not enough data yet.</li>"}</ul>
+  </div>`;
+
+  return `<div class="card match-hero">
+      <div class="eyebrow">Head-to-head &middot; ${a.matches_analyzed} vs ${b.matches_analyzed} matches analyzed</div>
+      <div class="matchup">
+        <div class="side home"><span class="dot" style="background:var(--home)"></span><span class="team-name">${esc(a.team)}</span></div>
+        <div class="vs">vs</div>
+        <div class="side away"><span class="team-name">${esc(b.team)}</span><span class="dot" style="background:var(--away)"></span></div>
+      </div>
+      <table><tr><th>Metric</th><th class="num">${esc(a.team)}</th><th class="num">${esc(b.team)}</th></tr>${h2hRows}</table>
+    </div>
+    <div class="cols">${teamCard(a, "home")}${teamCard(b, "away")}</div>`;
+}
+
+function renderPlayerProfile(profile) {
+  const t = profile.totals || {}, a = profile.averages || {};
+  const rows = (profile.trend || []).map((m) =>
+    `<tr><td>${esc(m.match_date)}</td><td>${esc(m.opponent || "-")}</td>
+      <td class="num">${m.accuracy == null ? "-" : m.accuracy + "%"}</td>
+      <td class="num">${m.progressive_passes ?? "-"}</td>
+      <td class="num">${m.xt_generated == null ? "-" : n2(m.xt_generated)}</td>
+      <td class="num">${m.under_pressure_accuracy == null ? "-" : m.under_pressure_accuracy + "%"}</td></tr>`
+  ).join("");
+  const takeaways = (profile.takeaways || []).map((tk) => `<li>${esc(tk)}</li>`).join("");
+  return `<div class="card match-hero">
+      <div class="eyebrow">Player scout &middot; ${esc(profile.team || "-")} &middot; ${profile.matches_analyzed} match${profile.matches_analyzed === 1 ? "" : "es"} analyzed</div>
+      <div class="matchup"><div class="side home"><span class="team-name">${esc(profile.nickname || profile.player)}</span></div></div>
+      <div class="statgrid">
+        ${stat("Overall accuracy", t.accuracy == null ? "-" : t.accuracy + "%")}
+        ${stat("Avg accuracy/match", a.accuracy == null ? "-" : a.accuracy + "%")}
+        ${stat("Total progressive", t.progressive_passes ?? "-")}
+        ${stat("Avg under pressure", a.under_pressure_accuracy == null ? "-" : a.under_pressure_accuracy + "%")}
+        ${stat("Total xT generated", t.xt_generated == null ? "-" : n2(t.xt_generated))}
+        ${stat("Avg xT/match", a.xt_generated == null ? "-" : n2(a.xt_generated))}
+      </div>
+    </div>
+    <div class="card"><h3>Scouting takeaways</h3><ul class="takeaways">${takeaways || '<li>Not enough data yet.</li>'}</ul></div>
+    <div class="cols">
+      <div class="card"><h4>Accuracy trend</h4>${svgTrendChart(profile.trend, "accuracy", { label: "Accuracy", suffix: "%" })}</div>
+      <div class="card"><h4>xT generated trend</h4>${svgTrendChart(profile.trend, "xt_generated", { label: "xT generated" })}</div>
+    </div>
+    <div class="card"><h4>Match-by-match</h4>
+      <table><tr><th>Match</th><th>Opponent</th><th class="num">Accuracy</th><th class="num">Progressive</th><th class="num">xT</th><th class="num">Under pressure</th></tr>${rows}</table>
+    </div>`;
+}
+
 const STEP_FN = [null, renderLoad, renderNetwork, renderCentrality, renderTactical, renderStory, renderReport];
 const STEPS = [
   { n: 1, label: "1 \u00b7 Load" },
@@ -371,6 +509,12 @@ export default function App() {
     try { localStorage.setItem("pns-theme", theme); } catch { /* localStorage unavailable */ }
   }, [theme]);
 
+  // --- Opponent Scout mode: independent of the match-step pipeline above ---
+  const [mode, setMode] = useState("match");
+  const [allTeams, setAllTeams] = useState([]);
+  const [opponentTeam, setOpponentTeam] = useState("");
+  const [opponentContent, setOpponentContent] = useState('<p class="muted pad">Pick a team above to scout.</p>');
+
   const api = useCallback(async (cmd) => {
     const key = JSON.stringify(cmd);
     if (cacheRef.current[key]) return cacheRef.current[key];
@@ -381,6 +525,57 @@ export default function App() {
     cacheRef.current[key] = j;
     return j;
   }, []);
+
+  useEffect(() => {
+    if ((mode === "opponent" || mode === "compare") && allTeams.length === 0) {
+      api({ command: "all_teams" }).then((d) => setAllTeams(d.teams || [])).catch(() => {});
+    }
+  }, [mode, allTeams.length, api]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!opponentTeam) { setOpponentContent('<p class="muted pad">Pick a team above to scout.</p>'); return; }
+      setOpponentContent('<p class="loading">Computing...</p>');
+      try {
+        const profile = await api({ command: "opponent_profile", team: opponentTeam });
+        if (cancelled) return;
+        if (profile.error) { setOpponentContent(`<p class="loading">Error: ${esc(profile.error)}</p>`); return; }
+        setOpponentContent(renderOpponentProfile(profile));
+      } catch (e) {
+        if (!cancelled) setOpponentContent(`<p class="loading">Error: ${esc(e.message)}</p>`);
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+  }, [opponentTeam, api]);
+
+  // --- Compare mode: two opponent profiles fetched side by side ---
+  const [compareTeamA, setCompareTeamA] = useState("");
+  const [compareTeamB, setCompareTeamB] = useState("");
+  const [compareContent, setCompareContent] = useState('<p class="muted pad">Pick two teams above to compare.</p>');
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!compareTeamA || !compareTeamB) { setCompareContent('<p class="muted pad">Pick two teams above to compare.</p>'); return; }
+      if (compareTeamA === compareTeamB) { setCompareContent('<p class="loading">Pick two different teams.</p>'); return; }
+      setCompareContent('<p class="loading">Computing...</p>');
+      try {
+        const [a, b] = await Promise.all([
+          api({ command: "opponent_profile", team: compareTeamA }),
+          api({ command: "opponent_profile", team: compareTeamB }),
+        ]);
+        if (cancelled) return;
+        if (a.error || b.error) { setCompareContent(`<p class="loading">Error: ${esc(a.error || b.error)}</p>`); return; }
+        setCompareContent(renderCompareTeams(a, b));
+      } catch (e) {
+        if (!cancelled) setCompareContent(`<p class="loading">Error: ${esc(e.message)}</p>`);
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+  }, [compareTeamA, compareTeamB, api]);
 
   const populateMatches = useCallback(async (selectDate) => {
     delete cacheRef.current[JSON.stringify({ command: "matches" })]; // bust so uploads appear
@@ -513,52 +708,107 @@ export default function App() {
         </div>
       </header>
 
-      <section className="bar">
-        <label>
-          Match
-          <select value={matchDate} onChange={onMatchChange}>
-            <option value="">{allMatches.length ? "Select a match..." : "Loading matches..."}</option>
-            {allMatches.map((m) => (
-              <option key={m.date} value={m.date}>
-                {`${m.home_team} vs ${m.away_team} - ${m.competition} (${m.date_display})`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Add your own match(es)
-          <span className="upload">
-            <input type="file" ref={fileInputRef} accept=".csv,.xlsx" />
-            <input type="text" placeholder="name (CSV only)" value={csvName} onChange={(e) => setCsvName(e.target.value)} />
-            <button className="btn small" onClick={doUpload}>Upload</button>
-          </span>
-        </label>
-        {teams.length > 0 && (
-          <div className="legend">
-            {teams.map((tm) => (
-              <span key={tm}>
-                <span className="dot" style={{ background: COL(teams, tm) }}></span>{tm}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
-      <div className={"uploadmsg " + uploadCls}>{uploadMsg}</div>
-
-      <nav className="steps">
-        {STEPS.map((s) => (
-          <button
-            key={s.n}
-            className={step === s.n ? "active" : ""}
-            disabled={!stepsEnabled && s.n !== 1}
-            onClick={() => setStep(s.n)}
-          >
-            {s.label}
-          </button>
-        ))}
+      <nav className="mode-tabs">
+        <button className={mode === "match" ? "active" : ""} onClick={() => setMode("match")}>Match Analysis</button>
+        <button className={mode === "opponent" ? "active" : ""} onClick={() => setMode("opponent")}>Opponent Scout</button>
+        <button className={mode === "compare" ? "active" : ""} onClick={() => setMode("compare")}>Compare Teams</button>
       </nav>
 
-      <main ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />
+      {mode === "match" && (
+        <>
+          <section className="bar">
+            <label>
+              Match
+              <select value={matchDate} onChange={onMatchChange}>
+                <option value="">{allMatches.length ? "Select a match..." : "Loading matches..."}</option>
+                {allMatches.map((m) => (
+                  <option key={m.date} value={m.date}>
+                    {`${m.home_team} vs ${m.away_team} - ${m.competition} (${m.date_display})`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Add your own match(es)
+              <span className="upload">
+                <input type="file" ref={fileInputRef} accept=".csv,.xlsx" />
+                <input type="text" placeholder="name (CSV only)" value={csvName} onChange={(e) => setCsvName(e.target.value)} />
+                <button className="btn small" onClick={doUpload}>Upload</button>
+              </span>
+            </label>
+            {teams.length > 0 && (
+              <div className="legend">
+                {teams.map((tm) => (
+                  <span key={tm}>
+                    <span className="dot" style={{ background: COL(teams, tm) }}></span>{tm}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+          <div className={"uploadmsg " + uploadCls}>{uploadMsg}</div>
+
+          <nav className="steps">
+            {STEPS.map((s) => (
+              <button
+                key={s.n}
+                className={step === s.n ? "active" : ""}
+                disabled={!stepsEnabled && s.n !== 1}
+                onClick={() => setStep(s.n)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </nav>
+
+          <main ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />
+        </>
+      )}
+
+      {mode === "opponent" && (
+        <>
+          <section className="bar">
+            <label>
+              Opponent team
+              <select value={opponentTeam} onChange={(e) => setOpponentTeam(e.target.value)}>
+                <option value="">{allTeams.length ? "Select a team..." : "Loading teams..."}</option>
+                {allTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+          </section>
+
+          <main dangerouslySetInnerHTML={{ __html: opponentContent }} />
+        </>
+      )}
+
+      {mode === "compare" && (
+        <>
+          <section className="bar">
+            <label>
+              Team A
+              <select value={compareTeamA} onChange={(e) => setCompareTeamA(e.target.value)}>
+                <option value="">{allTeams.length ? "Select a team..." : "Loading teams..."}</option>
+                {allTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Team B
+              <select value={compareTeamB} onChange={(e) => setCompareTeamB(e.target.value)}>
+                <option value="">{allTeams.length ? "Select a team..." : "Loading teams..."}</option>
+                {allTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+          </section>
+
+          <main dangerouslySetInnerHTML={{ __html: compareContent }} />
+        </>
+      )}
 
       <footer>Reads real StatsBomb event data with xT pre-computed. All fourteen analysis modules run live in <code>predict_server.py</code>; this page is served by <code>api_server.py</code>.</footer>
     </div>
