@@ -677,7 +677,7 @@ export default function App() {
               <circle cx="19" cy="19" r="6" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="1" />
             </svg>
             <div>
-              <h1>Passing Networks <span>Studio</span></h1>
+              <h1> Opposition Passing Networks <span>Studio</span></h1>
               <p className="sub">Build and analyse a full passing network from real match data - network, centrality, tactical maps and the match story, end to end.</p>
             </div>
           </div>
