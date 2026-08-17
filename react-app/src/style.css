@@ -167,7 +167,7 @@ td.num,th.num{text-align:right;font-family:var(--font-mono);font-variant-numeric
 .upload input[type=file]{font-size:11px;color:var(--muted);max-width:160px;font-family:var(--font-body)}
 .upload input[type=text]{background:var(--panel);color:var(--ink);border:1px solid var(--line);
   border-radius:7px;padding:8px 10px;font-size:12px;width:120px;font-family:var(--font-body)}
-/* step 1: match summary hero */
+
 .match-hero{padding-top:20px}
 .eyebrow{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
 .matchup{display:flex;align-items:center;justify-content:center;gap:28px;margin:18px 0 22px;flex-wrap:wrap}
