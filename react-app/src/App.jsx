@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./style.css";
 
-// ---------------------------------------------------------------- helpers (pure, no DOM globals)
+
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const n2 = (x) => (x == null ? "-" : Number(x).toFixed(2));
 const n1 = (x) => (x == null ? "-" : Number(x).toFixed(1));
@@ -22,9 +22,9 @@ function pitchLines() {
     <rect x="0" y="18" width="18" height="44" ${s}/><rect x="102" y="18" width="18" height="44" ${s}/>
     <rect x="0" y="30" width="6" height="20" ${s}/><rect x="114" y="30" width="6" height="20" ${s}/>`;
 }
-const fy = (y) => y; // StatsBomb y maps straight through (0 at top)
+const fy = (y) => y; 
 
-// ---------------------------------------------------------------- STEP builders (return HTML strings, same as original)
+
 function columnsCard(allMatches) {
   const cols = (allMatches && allMatches[0] && allMatches[0].columns) || REQUIRED_COLS;
   const required = cols.filter((c) => REQUIRED_COLS.includes(c));
