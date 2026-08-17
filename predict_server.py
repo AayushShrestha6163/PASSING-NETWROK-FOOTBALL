@@ -2217,6 +2217,251 @@ def calculate_shot_map(df, team_name):
 
 
 # ---------------------------------------------------------------------------
+# OPPONENT PROFILE (multi-match aggregation)
+# ---------------------------------------------------------------------------
+def calculate_opponent_profile(team_name):
+    """
+    Aggregate a team's tactical identity across EVERY match in MATCH_DATA
+    that features them — average PPDA, field tilt, network density, and
+    Thomas Grund centralisation, plus which player shows up as hub most
+    often and a per-match trend list (for charting PPDA/tilt/density over
+    time). This is what turns single-match analysis into opponent scouting:
+    "how does this team usually play", not just "how did they play once".
+
+    Reuses calculate_network_metrics / calculate_ppda / calculate_field_tilt /
+    calculate_team_shape / calculate_thomas_grund_centrality per match —
+    no new per-match logic, just looping + averaging what already exists.
+    """
+    matches = []
+    for match_date, mdf in MATCH_DATA.items():
+        teams_in_match = mdf["team_name"].dropna().unique().tolist()
+        if team_name not in teams_in_match:
+            continue
+
+        network = calculate_network_metrics(mdf, team_name)
+        if network is None:
+            continue
+
+        ppda = calculate_ppda(mdf, team_name)
+        field_tilt = calculate_field_tilt(mdf, team_name)
+        shape = calculate_team_shape(mdf, team_name)
+        grund = calculate_thomas_grund_centrality(mdf, team_name, network)
+
+        opponent = [t for t in teams_in_match if t != team_name and pd.notna(t)]
+        opponent_name = opponent[0] if opponent else None
+
+        nm = network.get("metrics", {})
+        hub_name = nm.get("hub_player")
+
+        matches.append({
+            "match_date": match_date,
+            "opponent": opponent_name,
+            "ppda": ppda.get("ppda"),
+            "field_tilt": field_tilt.get("field_tilt"),
+            "density": nm.get("network_density"),
+            "hub": get_nickname(hub_name) if hub_name else None,
+            "centrality_percentage": grund.get("centrality_percentage") if grund else None,
+            "style": grund.get("style") if grund else None,
+            "avg_width": shape.get("avg_width"),
+            "avg_depth": shape.get("avg_depth"),
+            "compactness": shape.get("compactness"),
+        })
+
+    if not matches:
+        return None
+
+    def _avg(key):
+        vals = [m[key] for m in matches if m.get(key) is not None]
+        return round(sum(vals) / len(vals), 2) if vals else None
+
+    # Most frequent hub player and playing style across matches
+    hub_counts = defaultdict(int)
+    style_counts = defaultdict(int)
+    for m in matches:
+        if m.get("hub"):
+            hub_counts[m["hub"]] += 1
+        if m.get("style"):
+            style_counts[m["style"]] += 1
+
+    most_common_hub = max(hub_counts.items(), key=lambda x: x[1])[0] if hub_counts else None
+    most_common_style = max(style_counts.items(), key=lambda x: x[1])[0] if style_counts else None
+
+    avg_ppda = _avg("ppda")
+    avg_tilt = _avg("field_tilt")
+    avg_density = _avg("density")
+    avg_centrality = _avg("centrality_percentage")
+
+    # Plain-language scouting takeaways derived straight from the averages
+    takeaways = []
+    if avg_ppda is not None:
+        if avg_ppda < 8:
+            takeaways.append(
+                f"Presses high on average (PPDA {avg_ppda}) - expect them to close down "
+                f"quickly; look to play direct and bypass the press rather than build slowly."
+            )
+        elif avg_ppda > 14:
+            takeaways.append(
+                f"Presses passively on average (PPDA {avg_ppda}) - time on the ball should "
+                f"be available in build-up phases."
+            )
+    if avg_tilt is not None:
+        if avg_tilt > 58:
+            takeaways.append(
+                f"Typically dominates territory (avg field tilt {avg_tilt}%) - be prepared "
+                f"to defend for long spells and look to hit them on the counter."
+            )
+        elif avg_tilt < 42:
+            takeaways.append(
+                f"Tends to concede territory (avg field tilt {avg_tilt}%) - they may sit "
+                f"deep or rely on quick transitions rather than sustained pressure."
+            )
+    if avg_centrality is not None and most_common_hub:
+        if avg_centrality >= 18:
+            takeaways.append(
+                f"Build-up regularly runs through {most_common_hub} (avg centralisation "
+                f"{avg_centrality}%) - cutting off their supply disrupts the whole team."
+            )
+        else:
+            takeaways.append(
+                f"Passing is fairly evenly distributed (avg centralisation {avg_centrality}%) "
+                f"- no single player to isolate; pressing has to be a team effort."
+            )
+    if not takeaways:
+        takeaways.append("Not enough consistent signal yet across these matches to draw a strong tactical pattern.")
+
+    matches.sort(key=lambda m: m["match_date"])
+
+    return {
+        "team": team_name,
+        "matches_analyzed": len(matches),
+        "averages": {
+            "ppda": avg_ppda,
+            "field_tilt": avg_tilt,
+            "density": avg_density,
+            "centrality_percentage": avg_centrality,
+            "avg_width": _avg("avg_width"),
+            "avg_depth": _avg("avg_depth"),
+            "compactness": _avg("compactness"),
+        },
+        "most_common_hub": most_common_hub,
+        "most_common_style": most_common_style,
+        "takeaways": takeaways,
+        "trend": matches,
+    }
+
+
+# ---------------------------------------------------------------------------
+# PLAYER PROFILE (multi-match aggregation)
+# ---------------------------------------------------------------------------
+def calculate_player_profile(player_name):
+    """
+    Aggregate one player's performance across EVERY match they appear in —
+    reuses calculate_player_detail per match (same function handle_player
+    already calls for a single match) and sums/averages the results, plus
+    builds a per-match trend so form/consistency is visible, not just a
+    single-game snapshot. This is the player-side counterpart to
+    calculate_opponent_profile above.
+    """
+    matches = []
+    for match_date, mdf in MATCH_DATA.items():
+        appears = (
+            (mdf["player_name"] == player_name).any()
+            or ("pass_recipient_name" in mdf.columns and (mdf["pass_recipient_name"] == player_name).any())
+        )
+        if not appears:
+            continue
+
+        detail = calculate_player_detail(mdf, player_name)
+        team = detail.get("team")
+        teams_in_match = mdf["team_name"].dropna().unique().tolist()
+        opponent = [t for t in teams_in_match if t != team and pd.notna(t)]
+        opponent_name = opponent[0] if opponent else None
+
+        matches.append({
+            "match_date": match_date,
+            "opponent": opponent_name,
+            "team": team,
+            "passes_attempted": detail.get("passes_attempted", 0),
+            "passes_completed": detail.get("passes_completed", 0),
+            "accuracy": detail.get("accuracy"),
+            "progressive_passes": detail.get("progressive_passes", 0),
+            "under_pressure_accuracy": detail.get("under_pressure_accuracy"),
+            "xt_generated": detail.get("xt_generated"),
+            "xt_received": detail.get("xt_received"),
+        })
+
+    if not matches:
+        return None
+
+    def _sum(key):
+        return sum((m.get(key) or 0) for m in matches)
+
+    def _avg(key):
+        vals = [m[key] for m in matches if m.get(key) is not None]
+        return round(sum(vals) / len(vals), 2) if vals else None
+
+    total_attempted = _sum("passes_attempted")
+    total_completed = _sum("passes_completed")
+    overall_accuracy = round(total_completed / total_attempted * 100, 1) if total_attempted > 0 else None
+
+    # Most frequent team (handles a player appearing for one team across the dataset)
+    team_counts = defaultdict(int)
+    for m in matches:
+        if m.get("team"):
+            team_counts[m["team"]] += 1
+    primary_team = max(team_counts.items(), key=lambda x: x[1])[0] if team_counts else None
+
+    avg_accuracy = _avg("accuracy")
+    avg_xt = _avg("xt_generated")
+    avg_progressive = _avg("progressive_passes")
+    avg_pressure_acc = _avg("under_pressure_accuracy")
+
+    takeaways = []
+    if avg_accuracy is not None:
+        if avg_accuracy >= 88:
+            takeaways.append(f"Very reliable in possession (avg {avg_accuracy}% pass accuracy) - a safe out-ball under pressure.")
+        elif avg_accuracy < 72:
+            takeaways.append(f"Below-average accuracy (avg {avg_accuracy}%) - a realistic press target to force turnovers.")
+    if avg_pressure_acc is not None:
+        if avg_pressure_acc < 55:
+            takeaways.append(f"Accuracy drops sharply under pressure (avg {avg_pressure_acc}%) - close them down quickly on the ball.")
+        elif avg_pressure_acc >= 80:
+            takeaways.append(f"Composed under pressure (avg {avg_pressure_acc}% accuracy) - pressing them individually has limited payoff.")
+    if avg_xt is not None:
+        if avg_xt > 0.15:
+            takeaways.append(f"Consistently generates threat with the ball (avg xT {avg_xt}/match) - a key creative outlet to nullify.")
+        elif avg_xt < 0:
+            takeaways.append(f"Passing tends to reduce team threat on average (avg xT {avg_xt}/match).")
+    if not takeaways:
+        takeaways.append("Not enough consistent signal yet across these matches to draw a strong pattern.")
+
+    matches.sort(key=lambda m: m["match_date"])
+
+    return {
+        "player": player_name,
+        "nickname": get_nickname(player_name),
+        "team": primary_team,
+        "matches_analyzed": len(matches),
+        "totals": {
+            "passes_attempted": total_attempted,
+            "passes_completed": total_completed,
+            "accuracy": overall_accuracy,
+            "progressive_passes": _sum("progressive_passes"),
+            "xt_generated": round(_sum("xt_generated"), 4),
+            "xt_received": round(_sum("xt_received"), 4),
+        },
+        "averages": {
+            "accuracy": avg_accuracy,
+            "progressive_passes": avg_progressive,
+            "under_pressure_accuracy": avg_pressure_acc,
+            "xt_generated": avg_xt,
+        },
+        "takeaways": takeaways,
+        "trend": matches,
+    }
+
+
+# ---------------------------------------------------------------------------
 # MATCH VERDICT
 # ---------------------------------------------------------------------------
 def calculate_match_verdict(df, teams, periods):
@@ -2983,6 +3228,16 @@ def handle_teams(cmd):
     return {"teams": teams, "match_date": match_date}
 
 
+def handle_all_teams(cmd):
+    """Every distinct team name across ALL loaded matches — powers an
+    opponent picker that isn't tied to a single match's dropdown, so you
+    can pick a team and see their profile across every match they're in."""
+    teams = set()
+    for mdf in MATCH_DATA.values():
+        teams.update(mdf["team_name"].dropna().unique().tolist())
+    return {"teams": sorted(teams)}
+
+
 def handle_network(cmd):
     match_date = cmd.get("match_date", "")
     team = cmd.get("team", "")
@@ -3313,6 +3568,57 @@ def handle_player(cmd):
     return {"match_date": match_date, **result}
 
 
+def handle_opponent_profile(cmd):
+    """Opponent scouting profile: this team's tactical identity averaged
+    across every match they appear in, with a per-match trend and a short
+    list of plain-language takeaways. This is the multi-match counterpart
+    to handle_tactical/handle_compare, which are both single-match."""
+    team = cmd.get("team", "")
+    if not team:
+        return {"error": "team is required"}
+
+    profile = calculate_opponent_profile(team)
+    if profile is None:
+        return {"error": f"No matches found for team '{team}'"}
+    return profile
+
+
+def handle_team_players(cmd):
+    """Every player who appears for a given team across ALL loaded
+    matches — powers a player picker scoped to the team just selected in
+    Opponent Scout, rather than dumping every player from every match."""
+    team = cmd.get("team", "")
+    if not team:
+        return {"error": "team is required"}
+
+    players = set()
+    for mdf in MATCH_DATA.values():
+        if team not in mdf["team_name"].dropna().unique().tolist():
+            continue
+        team_events = mdf[mdf["team_name"] == team]
+        players.update(team_events["player_name"].dropna().unique().tolist())
+
+    result = sorted(
+        [{"name": p, "nickname": get_nickname(p)} for p in players],
+        key=lambda x: x["nickname"],
+    )
+    return {"team": team, "players": result}
+
+
+def handle_player_profile(cmd):
+    """Player scouting profile: this player's performance averaged across
+    every match they appear in, with a per-match trend and takeaways —
+    the player-side counterpart to handle_opponent_profile."""
+    player_name = cmd.get("player_name", "")
+    if not player_name:
+        return {"error": "player_name is required"}
+
+    profile = calculate_player_profile(player_name)
+    if profile is None:
+        return {"error": f"No matches found for player '{player_name}'"}
+    return profile
+
+
 # ---------------------------------------------------------------------------
 # COMMAND ROUTER
 # ---------------------------------------------------------------------------
@@ -3360,6 +3666,7 @@ COMMAND_HANDLERS = {
     "health": handle_health,
     "matches": handle_matches,
     "teams": handle_teams,
+    "all_teams": handle_all_teams,
     "network": handle_network,
     "insights": handle_insights,
     "compare": handle_compare,
@@ -3371,6 +3678,9 @@ COMMAND_HANDLERS = {
     "zone_connections": handle_zone_connections,
     "shots": handle_shots,
     "player": handle_player,
+    "opponent_profile": handle_opponent_profile,
+    "team_players": handle_team_players,
+    "player_profile": handle_player_profile,
     "upload_csv": handle_upload_csv,
 }
 
