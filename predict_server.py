@@ -3055,7 +3055,7 @@ def calculate_goals_with_buildup(df, match_date):
 
 # ---------------------------------------------------------------------------
 # TIMELINE ANALYSIS (5-minute periods)
-# ---------------------------------------------------------------------------
+
 def calculate_timeline(df, match_date):
     """5-minute periods — matches legacy api_server.py /timeline-analysis endpoint."""
     teams = df["team_name"].dropna().unique().tolist()
