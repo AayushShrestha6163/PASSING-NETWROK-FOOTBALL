@@ -3157,7 +3157,7 @@ def calculate_timeline(df, match_date):
 
 # ---------------------------------------------------------------------------
 # COMMAND HANDLERS
-# ---------------------------------------------------------------------------
+
 def handle_health(cmd):
     match_list = []
     for match_date, mdf in MATCH_DATA.items():
