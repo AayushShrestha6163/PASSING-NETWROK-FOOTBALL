@@ -1824,7 +1824,7 @@ def calculate_passing_rate(df, team_name):
 
 # ---------------------------------------------------------------------------
 # TACTICAL MAP 25 ZONES
-# ---------------------------------------------------------------------------
+
 def calculate_tactical_map_25_zones(df, team_name):
     """
     Calculate pass distribution map with 25 zones (5x5 grid).
