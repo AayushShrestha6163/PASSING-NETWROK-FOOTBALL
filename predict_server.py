@@ -1594,7 +1594,7 @@ def generate_narrative_insights(insights, team_name, pass_accuracy, total_passes
 
 # ---------------------------------------------------------------------------
 # TIME INTERVALS
-# ---------------------------------------------------------------------------
+
 def calculate_time_intervals(df, team_name, interval_minutes=15):
     """Network metrics for each time interval — matches legacy."""
     intervals = []
