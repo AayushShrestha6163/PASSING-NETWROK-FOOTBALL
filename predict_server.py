@@ -213,7 +213,7 @@ def calculate_betweenness_centrality(pass_matrix, all_players):
 
 # ---------------------------------------------------------------------------
 # CLUSTERING COEFFICIENT
-# ---------------------------------------------------------------------------
+
 def calculate_clustering_coefficient(pass_matrix, all_players):
     """Calculate clustering coefficient for each player."""
     result = {}
