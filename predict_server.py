@@ -303,7 +303,7 @@ def calculate_eigenvector_centrality(pass_matrix, all_players, iterations=100):
 
 # ---------------------------------------------------------------------------
 # PASS SEQUENCES
-# ---------------------------------------------------------------------------
+
 def calculate_pass_sequences(df, team_name):
     """Track consecutive successful passes — matches legacy exactly."""
     team_events = df[df["team_name"] == team_name].sort_values(
