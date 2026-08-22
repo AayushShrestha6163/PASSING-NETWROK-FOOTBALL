@@ -259,7 +259,7 @@ def calculate_clustering_coefficient(pass_matrix, all_players):
 
 # ---------------------------------------------------------------------------
 # EIGENVECTOR CENTRALITY (Power Iteration)
-# ---------------------------------------------------------------------------
+
 def calculate_eigenvector_centrality(pass_matrix, all_players, iterations=100):
     """Power iteration eigenvector centrality."""
     n = len(all_players)
