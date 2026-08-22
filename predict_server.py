@@ -2344,7 +2344,7 @@ def calculate_opponent_profile(team_name):
 
 # ---------------------------------------------------------------------------
 # PLAYER PROFILE (multi-match aggregation)
-# ---------------------------------------------------------------------------
+
 def calculate_player_profile(player_name):
     """
     Aggregate one player's performance across EVERY match they appear in —
