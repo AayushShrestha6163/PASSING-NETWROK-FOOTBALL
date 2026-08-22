@@ -371,7 +371,7 @@ def calculate_pass_sequences(df, team_name):
 
 # ---------------------------------------------------------------------------
 # PPDA
-# ---------------------------------------------------------------------------
+
 def calculate_ppda(df, team_name):
     """
     PPDA = opponent_passes_in_their_half(x<60) /
