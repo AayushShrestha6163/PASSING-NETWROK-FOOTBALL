@@ -2138,7 +2138,7 @@ def calculate_zone_connections(df, team_name, min_passes=1):
 
 # ---------------------------------------------------------------------------
 # SHOT MAP
-# ---------------------------------------------------------------------------
+
 def calculate_shot_map(df, team_name):
     """Shots grouped by player with xG, goals, conversion rate, xG difference."""
     shots = df[
