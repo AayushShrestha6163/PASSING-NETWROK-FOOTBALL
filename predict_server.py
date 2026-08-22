@@ -561,7 +561,7 @@ def calculate_field_tilt(df, team_name):
 
 # ---------------------------------------------------------------------------
 # TEAM SHAPE
-# ---------------------------------------------------------------------------
+
 def calculate_team_shape(df, team_name):
     """Team shape metrics — matches legacy: successful passes only, returns avg_width/avg_depth/avg_player_distance/compactness."""
     team_passes = df[
