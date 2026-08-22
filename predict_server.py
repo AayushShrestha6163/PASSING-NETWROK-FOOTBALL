@@ -1761,7 +1761,7 @@ def calculate_thomas_grund_centrality(df, team_name, network_data=None):
 
 # ---------------------------------------------------------------------------
 # PASSING RATE
-# ---------------------------------------------------------------------------
+
 def calculate_passing_rate(df, team_name):
     """Passes per minute — matches legacy: successful passes only, team event time range."""
     team_passes = df[
