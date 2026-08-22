@@ -2210,7 +2210,7 @@ def calculate_shot_map(df, team_name):
 
 # ---------------------------------------------------------------------------
 # OPPONENT PROFILE (multi-match aggregation)
-# ---------------------------------------------------------------------------
+
 def calculate_opponent_profile(team_name):
     """
     Aggregate a team's tactical identity across EVERY match in MATCH_DATA
