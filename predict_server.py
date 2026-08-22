@@ -1931,7 +1931,7 @@ def calculate_tactical_map_25_zones(df, team_name):
 
 # ---------------------------------------------------------------------------
 # ZONE PASS DIRECTIONS
-# ---------------------------------------------------------------------------
+
 def calculate_zone_pass_directions(df, team_name):
     """25 zones pass direction sonar — matches legacy: successful passes, radians, col=x row=y."""
     team_passes = df[
