@@ -2012,7 +2012,7 @@ def calculate_zone_pass_directions(df, team_name):
 
 # ---------------------------------------------------------------------------
 # ZONE CONNECTIONS
-# ---------------------------------------------------------------------------
+
 def calculate_zone_connections(df, team_name, min_passes=1):
     """Zone-to-zone pass connections — matches legacy: successful passes, col=x-axis progression."""
     team_passes = df[
