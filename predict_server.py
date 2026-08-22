@@ -434,7 +434,7 @@ def calculate_ppda(df, team_name):
 
 # ---------------------------------------------------------------------------
 # PASS DIRECTIONS
-# ---------------------------------------------------------------------------
+
 def calculate_pass_directions(df, team_name):
     """
     8 directions — matches legacy: only successful passes, returns counts/percentages/avg_distance.
