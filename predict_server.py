@@ -138,7 +138,7 @@ def get_nickname(full_name):
 
 # ---------------------------------------------------------------------------
 # BETWEENNESS CENTRALITY (Floyd-Warshall)
-# ---------------------------------------------------------------------------
+
 def calculate_betweenness_centrality(pass_matrix, all_players):
     """Floyd-Warshall based betweenness centrality."""
     n = len(all_players)
