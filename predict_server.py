@@ -745,7 +745,7 @@ def calculate_network_metrics(passes_df, team_name):
 
 # ---------------------------------------------------------------------------
 # WEAKEST LINK
-# ---------------------------------------------------------------------------
+
 def calculate_weakest_link(df, team_name, network_data):
     """
     Matches legacy api_server.py calculate_weakest_link exactly.
