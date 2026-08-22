@@ -1,4 +1,4 @@
-# Passing Networks Studio
+#  Opposition Passing Networks Studio
 
 A standalone version of the course studio: build and analyse a complete
 passing network from real match event data, end to end, through six steps -
@@ -10,7 +10,11 @@ network, centrality, tactical maps, the match story, and a printable report.
 pip install -r requirements.txt
 python api_server.py
 # then open http://localhost:8000
+cd react-app
+npm run dev 
+#then open http://localhost:5173/
 ```
+
 
 First start takes ~20 seconds while it loads the 31 matches from the Excel
 datasets; after that it is instant. The console prints the link when ready.
