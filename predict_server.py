@@ -506,7 +506,7 @@ def calculate_pass_directions(df, team_name):
 
 # ---------------------------------------------------------------------------
 # FIELD TILT
-# ---------------------------------------------------------------------------
+
 def calculate_field_tilt(df, team_name):
     """Comparative field tilt — the team's SHARE of all final-third (x >= 80)
     successful passes between the two teams in this match.
