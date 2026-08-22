@@ -2961,7 +2961,7 @@ def calculate_player_detail(df, player_name, team_name=None, period=None):
 
 # ---------------------------------------------------------------------------
 # GOAL ANALYSIS
-# ---------------------------------------------------------------------------
+
 def calculate_goals_with_buildup(df, match_date):
     """Find goals, trace back 15 Pass/Carry events by same team, calculate buildup xT.
     Matches legacy api_server.py /goals/{match_date} endpoint."""
