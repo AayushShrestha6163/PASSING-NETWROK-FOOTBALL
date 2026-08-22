@@ -1625,7 +1625,7 @@ def calculate_time_intervals(df, team_name, interval_minutes=15):
 
 # ---------------------------------------------------------------------------
 # THOMAS GRUND CENTRALITY
-# ---------------------------------------------------------------------------
+
 def calculate_thomas_grund_centrality(df, team_name, network_data=None):
     """
     Matches legacy api_server.py calculate_thomas_grund_centrality exactly.
