@@ -1032,7 +1032,7 @@ def get_progressive_passes(df, team_name):
 
 # ---------------------------------------------------------------------------
 # ADVANCED INSIGHTS
-# ---------------------------------------------------------------------------
+
 def calculate_advanced_insights(df, team_name):
     """Calculate advanced analytical insights — matches legacy api_server.py"""
     insights = {
