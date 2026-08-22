@@ -1471,7 +1471,7 @@ def calculate_advanced_insights(df, team_name):
 
 # ---------------------------------------------------------------------------
 # NARRATIVE INSIGHTS
-# ---------------------------------------------------------------------------
+
 def generate_narrative_insights(insights, team_name, pass_accuracy, total_passes):
     """Professional narrative — matches legacy structure with overview, analysis, recommendations."""
     overview_parts = [
