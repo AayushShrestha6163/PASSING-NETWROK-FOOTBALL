@@ -604,7 +604,7 @@ def calculate_team_shape(df, team_name):
 
 # ---------------------------------------------------------------------------
 # NETWORK METRICS (core)
-# ---------------------------------------------------------------------------
+
 def calculate_network_metrics(passes_df, team_name):
     """Calculate network analysis metrics for a team — matches legacy api_server.py"""
     team_passes = passes_df[
