@@ -2685,7 +2685,7 @@ def calculate_match_verdict(df, teams, periods):
 
 # ---------------------------------------------------------------------------
 # TIMELINE INSIGHTS
-# ---------------------------------------------------------------------------
+
 def generate_timeline_insights(periods, teams):
     """Matches legacy api_server.py generate_timeline_insights exactly."""
     insights = {
