@@ -2455,7 +2455,7 @@ def calculate_player_profile(player_name):
 
 # ---------------------------------------------------------------------------
 # MATCH VERDICT
-# ---------------------------------------------------------------------------
+
 def calculate_match_verdict(df, teams, periods):
     """Matches legacy api_server.py calculate_match_verdict exactly.
     Uses period data for xT, possession, progressive passes, and tempo."""
