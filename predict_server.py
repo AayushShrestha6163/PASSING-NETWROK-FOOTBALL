@@ -267,14 +267,6 @@ def calculate_eigenvector_centrality(pass_matrix, all_players, iterations=100):
         return {}
 
     player_idx = {p: i for i, p in enumerate(all_players)}
-
-    # Build undirected adjacency. Both adj[i][j] and adj[j][i] use +=
-    # because pass_matrix is directed: when team A→B exists AND B→A exists,
-    # both directed entries should contribute to BOTH halves of the
-    # symmetric undirected matrix. Previously `adj[i][j] = count` was an
-    # assignment, which the second loop iteration could overwrite (e.g. if
-    # A→B was 5 and B→A was 3, adj[A][B] ended up at 8 but adj[B][A] at 3,
-    # making the matrix asymmetric — not what the course text describes).
     adj = [[0.0] * n for _ in range(n)]
     for passer, recipients in pass_matrix.items():
         if passer not in player_idx:
