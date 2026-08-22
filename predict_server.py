@@ -123,7 +123,7 @@ def load_data():
 
 # ---------------------------------------------------------------------------
 # NICKNAME HELPER
-# ---------------------------------------------------------------------------
+
 def get_nickname(full_name):
     """Get a short display name for a player."""
     if full_name in PLAYER_NICKNAMES:
