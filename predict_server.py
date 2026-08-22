@@ -2776,7 +2776,7 @@ def generate_timeline_insights(periods, teams):
 
 # ---------------------------------------------------------------------------
 # PLAYER DETAIL ANALYSIS
-# ---------------------------------------------------------------------------
+
 def calculate_player_detail(df, player_name, team_name=None, period=None):
     """
     Passes made/received/attempted, accuracy, progressive, under_pressure stats,
