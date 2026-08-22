@@ -992,7 +992,7 @@ def calculate_weakest_link(df, team_name, network_data):
 
 # ---------------------------------------------------------------------------
 # PROGRESSIVE PASSES
-# ---------------------------------------------------------------------------
+
 def get_progressive_passes(df, team_name):
     """Passes where end_x - start_x >= 10 — matches legacy: only isna() passes."""
     passes = df[
