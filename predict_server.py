@@ -3613,7 +3613,7 @@ def handle_player_profile(cmd):
 
 # ---------------------------------------------------------------------------
 # COMMAND ROUTER
-# ---------------------------------------------------------------------------
+
 def handle_upload_csv(cmd):
     """Register a user-uploaded match CSV under a chosen key.
     Schema must match the StatsBomb event format the engine expects."""
